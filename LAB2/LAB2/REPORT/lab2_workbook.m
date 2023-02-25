@@ -43,3 +43,32 @@ hold on
 plot(green(:,1),green(:,2),'g')
 hold on
 plot(blue(:,1),blue(:,2),'b')
+%%
+%determine the read noise from a bias(zero second inegration ) from the lowest sphere flux value
+
+%determine unique sphere flux values
+
+uflux = unique(flux);
+
+%find the zero second frames at that flux
+
+ind0 = find(tint==0 & flux == min(uflux));
+
+%step throught the frames 2 tp end and determine the variance of central
+%201x 201 pixels 
+img_01 = read_isis([f(ind0(1)).folder '/' f(ind0(1)).name]);
+img_01 = img_01([1648/2+(-100:100),1200/2+(-100:100)]);
+for i = 2 : numel(ind0)
+    img_02 = read_isis([f(ind0(i)).folder '/' f(ind0(i)).name]);
+    img_02 = img_02([1648/2+(-100:100),1200/2+(-100:100)]);
+    img_0diff = img_01-img_02;
+    read_noise(i-1) = std(img_0diff(:)).^2./2;
+end
+
+%%
+Bayer_green = imread('bayer_mask_green.tif');
+Bayer_blue = imread('bayer_mask_blue.tif');
+Bayer_red = imread('bayer_mask_red.tif');
+Bayer_red = Bayer_red([1648/2+(-100:100),1200/2+(-100:100)]);
+Bayer_blue = Bayer_blue([1648/2+(-100:100),1200/2+(-100:100)]);
+Bayer_green = Bayer_green([1648/2+(-100:100),1200/2+(-100:100)]);
