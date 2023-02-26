@@ -69,6 +69,7 @@ mean_sol = mean(read_noise);
 bayer_red = imread('../DATA/bayer_mask_red.tif');
 bayer_green = imread('../DATA/bayer_mask_green.tif');
 bayer_blue = imread('../DATA/bayer_mask_blue.tif');
+%taking the area of interest (middle area)
 bayer_red = bayer_red(1648/2+[-100:100],1200/2+[-100:100]);
 bayer_blue = bayer_blue(1648/2+[-100:100],1200/2+[-100:100]);
 bayer_green = bayer_green(1648/2+[-100:100],1200/2+[-100:100]);
@@ -84,7 +85,7 @@ for i = numel(uflux)
     end
     bias = mean(bias,3);
     for j = 1:numel(utint)
-        ind = find(flux ==uflux(i)&tint == utint(j));
+        ind = find(flux ==uflux(i)& tint == utint(j));
         img_1 = read_isis([f(ind(1)).folder '/' f(ind(1)).name]);
         img_1 = img_1(1648/2+[-100:100],1200/2+[-100:100]);
         for ii = 2: numel(ind)
@@ -107,6 +108,12 @@ for i = numel(uflux)
         end
     end
 end
+%%
+avg = [avg_r,avg_b,avg_g];
+var = [var_red,var_blue,var_green];
+ind_4 = find(avg<1400); %because it saturates at that value
+
+%%
 figure
 plot(avg_r,var_red,'r.',Markersize = 20)
 hold on
