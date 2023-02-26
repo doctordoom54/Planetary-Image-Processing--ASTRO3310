@@ -57,18 +57,67 @@ ind0 = find(tint==0 & flux == min(uflux));
 %step throught the frames 2 tp end and determine the variance of central
 %201x 201 pixels 
 img_01 = read_isis([f(ind0(1)).folder '/' f(ind0(1)).name]);
-img_01 = img_01([1648/2+(-100:100),1200/2+(-100:100)]);
+img_01 = img_01(1648/2+[-100:100],1200/2+[-100:100]);
 for i = 2 : numel(ind0)
     img_02 = read_isis([f(ind0(i)).folder '/' f(ind0(i)).name]);
-    img_02 = img_02([1648/2+(-100:100),1200/2+(-100:100)]);
+    img_02 = img_02(1648/2+[-100:100],1200/2+[-100:100]);
     img_0diff = img_01-img_02;
     read_noise(i-1) = std(img_0diff(:)).^2./2;
 end
-
+mean_sol = mean(read_noise);
+%%
+bayer_red = imread('../DATA/bayer_mask_red.tif');
+bayer_green = imread('../DATA/bayer_mask_green.tif');
+bayer_blue = imread('../DATA/bayer_mask_blue.tif');
+bayer_red = bayer_red(1648/2+[-100:100],1200/2+[-100:100]);
+bayer_blue = bayer_blue(1648/2+[-100:100],1200/2+[-100:100]);
+bayer_green = bayer_green(1648/2+[-100:100],1200/2+[-100:100]);
+cnt = 0;
+for i = numel(uflux)
+    utint = unique(tint(flux==uflux(i) & tint ~=0));
+    ind0 = find(flux == uflux(i) & tint ==0);
+    bias = zeros(201,201,numel(ind0));
+    for j = 1:numel(ind0)
+        img0 = read_isis([f(ind0(i)).name]);
+        img0 = img0(1648/2+[-100:100],1200/2+[-100:100]);
+        bias(:,:,j) = img0;
+    end
+    bias = mean(bias,3);
+    for j = 1:numel(utint)
+        ind = find(flux ==uflux(i)&tint == utint(j));
+        img_1 = read_isis([f(ind(1)).folder '/' f(ind(1)).name]);
+        img_1 = img_1(1648/2+[-100:100],1200/2+[-100:100]);
+        for ii = 2: numel(ind)
+            img_2 = read_isis([f(ind(ii)).folder '/' f(ind(ii)).name]);
+            img_2 = img_2(1648/2+[-100:100],1200/2+[-100:100]);
+            img_diff = img_1-img_2;
+            %step through each bayer pattern and determine variance and
+            %mean
+            cnt = cnt+1;
+            disp(cnt)
+            ind_red = find(bayer_red==1);
+            ind_blue = find(bayer_blue==1);
+            ind_green = find(bayer_green==1);
+            var_red(cnt) = (std(img_diff(ind_red))).^2./2;
+            var_green(cnt) = (std(img_diff(ind_green))).^2./2;
+            var_blue(cnt) = (std(img_diff(ind_blue))).^2./2;
+            avg_r(cnt) = mean(img_2(ind_red))-mean(bias(ind_red));
+            avg_g(cnt) = mean(img_2(ind_green))-mean(bias(ind_green));
+            avg_b(cnt) = mean(img_2(ind_blue))-mean(bias(ind_blue));
+        end
+    end
+end
+figure
+plot(avg_r,var_red,'r.',Markersize = 20)
+hold on
+plot(avg_g,var_green,'g.', Markersize = 20)
 %%
 Bayer_green = imread('bayer_mask_green.tif');
 Bayer_blue = imread('bayer_mask_blue.tif');
 Bayer_red = imread('bayer_mask_red.tif');
-Bayer_red = Bayer_red([1648/2+(-100:100),1200/2+(-100:100)]);
-Bayer_blue = Bayer_blue([1648/2+(-100:100),1200/2+(-100:100)]);
-Bayer_green = Bayer_green([1648/2+(-100:100),1200/2+(-100:100)]);
+Bayer_red = Bayer_red(1648/2+[-100:100],1200/2+[-100:100]);
+Bayer_blue = Bayer_blue(1648/2+[-100:100],1200/2+[-100:100]);
+Bayer_green = Bayer_green(1648/2+[-100:100],1200/2+[-100:100]);
+
+sphere = csvread("LabSphere_SpectralResponse_Fo6.csv");
+plot(sphere(:,1),sphere(:,2)./max(sphere(:,2)))
