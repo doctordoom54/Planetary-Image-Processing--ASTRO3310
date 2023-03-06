@@ -1,0 +1,72 @@
+%A3310 LAB3 WORKBOOK FALL 2015
+%Name: ___Sachin Kelkar ___
+%Date: ___huh___
+
+%include the Matlab commands you used to answer the LAB questions in this
+%workbook. If run, the workbook should generate all figure and save all
+%images/arrays relevant to the lab without any errors.
+
+%add the LAB1 sub-directories to the Matlab path
+addpath(genpath('../'));
+load lab3_variables_2015.mat
+%generate dark frame:
+%values taken from LAB3 page
+Ad = 3.016;
+Bd =  0.105;
+As =  2.845;
+Bs = 0.105;
+An = 0.105;
+Bn = 0.144;
+Hoff = 8.27;
+T = -17.6433; %in C
+t_red = 108.0000./1000; %in ms
+t_blu =  1527.0000./1000;
+t_grn = 198.5000./1000;
+dark_frame_red = Ad.*t_red.*exp(T).*dark_lab + 4000.*As.*exp(Bs.*T).*shutter_lab + An.*exp(Bn.*T)+ Hoff;
+dark_frame_blu = Ad.*t_blu.*exp(T).*dark_lab + 4000.*As.*exp(Bs.*T).*shutter_lab + An.*exp(Bn.*T)+ Hoff;
+dark_frame_grn = Ad.*t_grn.*exp(T).*dark_lab + 4000.*As.*exp(Bs.*T).*shutter_lab + An.*exp(Bn.*T)+ Hoff;
+%imagesc(dark_frame_red')
+
+resp_red = 557.3 -0.575.*T-0.0014.*T.^2;
+resp_grn = 578.6-0.893.*T-0.0020.*T^2;
+resp_blu = 117.9-0.392.*T-0.0006.*T.^2;
+
+%calibrate the images of the ground 
+
+%step 1: Remove bad pixel
+%define bad pixel that have extreme ff correction(either large or small,
+%extreme bias or DN/shutter value
+
+ind_ff_bad = find(isnan(ff_red)|isnan(ff_blu)|isnan(ff_grn));
+ind_high = find(rover_red>10000 | rover_blu>10000 | rover_grn>10000);
+ind_low = find(ff_red<0.1|ff_grn<0.1|ff_blu<0.1);
+h = fspecial("average",10);
+rover_red_blur = imfilter(rover_red,h);
+rover_blu_blur = imfilter(rover_blu,h);
+rover_grn_blur = imfilter(rover_grn,h);
+ratio_red = rover_red./rover_red_blur;
+ratio_blu = rover_blu./rover_blu_blur;
+ratio_grn = rover_grn./rover_grn_blur;
+ind_cosmic = find(ratio_grn>5|ratio_red>5|ratio_blu>5);
+ind_bad = [ind_high' ind_cosmic' ind_low']
+imagesc(rover_red./rover_red_blur)
+
+
+
+%step 2: Remove dark current and shutter frame effects
+rover_red_cal = rover_red -dark_frame_red;
+rover_blu_cal = rover_blu-dark_frame_blu;
+rover_grn_cal = rover_grn-dark_frame_grn;
+
+%step 3: Flat field the images to make them look like the average pixel.
+rover_red_cal =rover_red_cal./ff_red;
+rover_blu_cal =rover_blu_cal./ff_blu;
+rover_grn_cal =rover_grn_cal./ff_grn;
+
+%divide the responsivity in the units of DNs
+
+rover_red_cal = rover_red_cal./t_red./resp_red;
+rover_blu_cal = rover_blu_cal./t_blu./resp_blu;
+rover_grn_cal = rover_grn_cal./t_grn./resp_grn;
+%INSERT YOU COMMANDS BELOW (REMEMBER TO COMMENT YOUR CODE!)
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
